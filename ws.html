@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Web Service — TPSIT 5EL</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Barlow+Condensed:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #111520;
+    --border: #1e2740;
+    --accent: #ff9f1c;
+    --accent2: #ff3d71;
+    --accent3: #a0f080;
+    --text: #d0dcea;
+    --dim: #5a6a80;
+    --code-bg: #080b12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 28px;
+    background: var(--panel);
+    border-bottom: 2px solid var(--accent);
+    height: 56px;
+  }
+  header .title { font-size: 1.5rem; font-weight: 800; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+  header .subtitle { font-size: 1rem; color: var(--dim); letter-spacing: 1px; }
+
+  .nav-bar { display: flex; align-items: center; gap: 8px; }
+  .dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    color: var(--dim); font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .dot:hover { border-color: var(--accent); color: var(--accent); }
+  .dot.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+  main { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 56px); }
+
+  .code-panel { display: flex; flex-direction: column; border-right: 2px solid var(--border); }
+
+  .slide-header { padding: 14px 24px 10px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  .slide-number { font-size: 0.75rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .slide-title { font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+  .slide-desc { font-size: 1.05rem; color: var(--accent3); margin-top: 4px; font-style: italic; }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;
+  }
+  .badge-get    { background:#1a1510; color:#ff9f1c; border:1px solid #ff9f1c; }
+  .badge-post   { background:#1a1525; color:#cc66ff; border:1px solid #cc66ff; }
+  .badge-put    { background:#151a10; color: var(--accent3); border:1px solid var(--accent3); }
+  .badge-delete { background:#1a1015; color: var(--accent2); border:1px solid var(--accent2); }
+  .badge-json   { background:#101a1a; color:#60e0e0; border:1px solid #60e0e0; }
+
+  .editor-wrap { flex: 1; display: flex; flex-direction: column; padding: 16px 20px; gap: 10px; }
+  .editor-label { font-size: 0.75rem; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+
+  textarea#editor {
+    flex: 1; background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--accent3); font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem; padding: 14px; resize: none; outline: none;
+    line-height: 1.65; tab-size: 2; transition: border-color 0.2s;
+  }
+  textarea#editor:focus { border-color: var(--accent); }
+
+  .btn-row { display: flex; gap: 10px; }
+  .btn {
+    padding: 10px 22px; border: none; border-radius: 3px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem;
+    font-weight: 700; letter-spacing: 1px; cursor: pointer;
+    text-transform: uppercase; transition: all 0.15s;
+  }
+  .btn-run { background: var(--accent); color: #000; flex: 1; }
+  .btn-run:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-run:active { transform: translateY(0); }
+  .btn-reset { background: transparent; color: var(--dim); border: 1px solid var(--border); }
+  .btn-reset:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .preview-panel { display: flex; flex-direction: column; background: var(--bg); }
+  .preview-label {
+    padding: 8px 20px; font-size: 0.75rem; color: var(--dim);
+    letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 1px solid var(--border); background: var(--panel);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  iframe#preview { flex: 1; border: none; background: #fff; }
+
+  .arrow-nav {
+    display: flex; gap: 8px; padding: 10px 20px;
+    border-top: 1px solid var(--border); background: var(--panel); justify-content: flex-end;
+  }
+  .btn-arrow {
+    padding: 8px 20px; background: transparent; border: 1px solid var(--border);
+    color: var(--text); font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.1rem; font-weight: 700; cursor: pointer; border-radius: 3px;
+    letter-spacing: 1px; text-transform: uppercase; transition: all 0.15s;
+  }
+  .btn-arrow:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-arrow:disabled { opacity: 0.2; cursor: default; }
+  .btn-arrow:disabled:hover { border-color: var(--border); color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="title">JS Web Service</div>
+    <div class="subtitle">TPSIT 5EL — Fetch API · JSON · REST (GET / POST / PUT / DELETE)</div>
+  </div>
+  <div class="nav-bar" id="navDots"></div>
+</header>
+
+<main>
+  <div class="code-panel">
+    <div class="slide-header">
+      <div class="slide-number" id="slideNum"></div>
+      <div class="slide-title" id="slideTitle"></div>
+      <div class="slide-desc" id="slideDesc"></div>
+      <span class="badge" id="slideBadge"></span>
+    </div>
+    <div class="editor-wrap">
+      <div class="editor-label">▸ HTML + JS — modifica e premi ESEGUI</div>
+      <textarea id="editor" spellcheck="false"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-run" onclick="runCode()">▶ Esegui</button>
+        <button class="btn btn-reset" onclick="resetCode()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-panel">
+    <div class="preview-label">
+      <span class="pulse"></span>
+      Preview live
+    </div>
+    <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+    <div class="arrow-nav">
+      <button class="btn-arrow" id="btnPrev" onclick="navigate(-1)">← Prec</button>
+      <button class="btn-arrow" id="btnNext" onclick="navigate(1)">Succ →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const BASE = 'https://jsonplaceholder.typicode.com';
+
+const slides = [
+  // ── V1 ── GET base con .then()
+  {
+    title: "GET con .then()",
+    desc: "Scarica un post e mostra id + titolo. Sintassi classica .then().",
+    badge: "GET", badgeClass: "badge-get",
+    code: `<button id="btn">Scarica Post #1</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = () => {
+    fetch('https://jsonplaceholder.typicode.com/posts/1')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('out').textContent =
+          "ID: " + data.id + "\\nTitolo: " + data.title;
+      });
+  };
+<\/script>`
+  },
+
+  // ── V2 ── GET con async/await
+  {
+    title: "GET con async/await",
+    desc: "Stessa chiamata GET ma con sintassi async/await + gestione errore.",
+    badge: "GET", badgeClass: "badge-get",
+    code: `<button id="btn">Scarica Post #3</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    try {
+      const res  = await fetch('https://jsonplaceholder.typicode.com/posts/3');
+      const data = await res.json();
+      document.getElementById('out').textContent =
+        "ID: "     + data.id     + "\\n" +
+        "User: "   + data.userId + "\\n" +
+        "Titolo: " + data.title;
+    } catch (e) {
+      document.getElementById('out').textContent = "Errore: " + e.message;
+    }
+  };
+<\/script>`
+  },
+
+  // ── V3 ── GET lista + forEach nel DOM
+  {
+    title: "GET lista → DOM",
+    desc: "Scarica i primi 5 post e li inserisce come <li> nel DOM.",
+    badge: "GET", badgeClass: "badge-get",
+    code: `<button id="btn">Carica Lista Post</button>
+<ul id="lista" style="margin-top:12px;"></ul>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const res   = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=5');
+    const posts = await res.json();
+    const ul    = document.getElementById('lista');
+    ul.innerHTML = '';
+    posts.forEach(p => {
+      ul.innerHTML += \`<li><b>#\${p.id}</b> — \${p.title}</li>\`;
+    });
+  };
+<\/script>`
+  },
+
+  // ── V4 ── Oggetto JSON + stringify/parse
+  {
+    title: "JSON.stringify / parse",
+    desc: "Crea un oggetto studente, lo serializza e lo deserializza.",
+    badge: "JSON", badgeClass: "badge-json",
+    code: `<button id="btn">Converti</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = () => {
+    const studente = { nome: "Anna", cognome: "Bianchi", voti: [7, 8, 9] };
+
+    // Oggetto → stringa JSON
+    const jsonString = JSON.stringify(studente);
+
+    // Stringa JSON → oggetto
+    const obj = JSON.parse(jsonString);
+
+    document.getElementById('out').textContent =
+      "Stringa JSON:\\n" + jsonString +
+      "\\n\\nRicostruito — nome: " + obj.nome +
+      ", voto[1]: " + obj.voti[1];
+  };
+<\/script>`
+  },
+
+  // ── V5 ── POST
+  {
+    title: "POST — Invia dati",
+    desc: "Invia un nuovo post in JSON al server e mostra la risposta con l'id assegnato.",
+    badge: "POST", badgeClass: "badge-post",
+    code: `<input id="titolo" placeholder="Titolo post" style="width:60%">
+<button id="btn">Invia POST</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const titolo = document.getElementById('titolo').value || "Post di test";
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: titolo, body: "Contenuto", userId: 1 })
+    });
+    const data = await res.json();
+    document.getElementById('out').textContent =
+      "✓ Creato con ID: " + data.id + "\\nTitolo: " + data.title;
+  };
+<\/script>`
+  },
+
+  // ── V6 ── PUT aggiornamento
+  {
+    title: "PUT — Aggiorna risorsa",
+    desc: "Aggiorna il titolo del post #1 con una chiamata PUT.",
+    badge: "PUT", badgeClass: "badge-put",
+    code: `<input id="nuovo" placeholder="Nuovo titolo" style="width:60%">
+<button id="btn">Aggiorna Post #1</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const titolo = document.getElementById('nuovo').value || "Titolo aggiornato";
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 1, title: titolo, body: "Aggiornato", userId: 1 })
+    });
+    const data = await res.json();
+    document.getElementById('out').textContent =
+      "✓ PUT OK\\nID: " + data.id + "\\nNuovo titolo: " + data.title;
+  };
+<\/script>`
+  },
+
+  // ── V7 ── DELETE
+  {
+    title: "DELETE — Elimina risorsa",
+    desc: "Elimina il post #1 con DELETE e verifica lo status HTTP 200.",
+    badge: "DELETE", badgeClass: "badge-delete",
+    code: `<button id="btn">Elimina Post #1</button>
+<p id="out" style="margin-top:12px; font-size:18px;"></p>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
+      method: 'DELETE'
+    });
+    document.getElementById('out').textContent =
+      res.ok
+        ? "✓ Eliminato — HTTP Status: " + res.status
+        : "✗ Errore: " + res.status;
+  };
+<\/script>`
+  },
+
+  // ── V8 ── Classe studente + POST
+  {
+    title: "Oggetto → POST",
+    desc: "Costruisce un oggetto studente da input e lo invia via POST come JSON.",
+    badge: "POST", badgeClass: "badge-post",
+    code: `<label>Nome: <input id="nome" value="Luca"></label><br><br>
+<label>Cognome: <input id="cogn" value="Verdi"></label><br><br>
+<button id="btn">Invia Studente</button>
+<pre id="out" style="margin-top:12px; background:#f5f5f5; padding:10px;"></pre>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const studente = {
+      nome:    document.getElementById('nome').value,
+      cognome: document.getElementById('cogn').value,
+      voti:    [7, 8, 9]
+    };
+    const res  = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(studente)
+    });
+    const data = await res.json();
+    document.getElementById('out').textContent =
+      "Payload inviato:\\n" + JSON.stringify(studente, null, 2) +
+      "\\n\\nRisposta ID: " + data.id;
+  };
+<\/script>`
+  },
+
+  // ── V9 ── Gestione errore HTTP
+  {
+    title: "Gestione errori HTTP",
+    desc: "Prova a fare GET su un ID inesistente e gestisce l'errore 404.",
+    badge: "GET", badgeClass: "badge-get",
+    code: `<input id="postId" type="number" value="9999" style="width:80px">
+<button id="btn">Fetch Post</button>
+<p id="out" style="margin-top:12px; font-size:18px;"></p>
+
+<script>
+  document.getElementById('btn').onclick = async () => {
+    const id  = document.getElementById('postId').value;
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts/' + id);
+    const out = document.getElementById('out');
+    if (res.ok) {
+      const data = await res.json();
+      out.textContent = "✓ Trovato: " + data.title;
+    } else {
+      out.textContent = "✗ Errore HTTP " + res.status + " — risorsa non trovata";
+    }
+  };
+<\/script>`
+  },
+
+  // ── V10 ── Tabella lista studenti da JSON locale
+  {
+    title: "Array JSON → Tabella",
+    desc: "Renderizza una lista di studenti (array JSON) in una tabella HTML.",
+    badge: "JSON", badgeClass: "badge-json",
+    code: `<table id="tab" border="1" cellpadding="8" style="border-collapse:collapse; width:100%;"></table>
+
+<script>
+  const classe = [
+    { nome: "Anna",  cognome: "Bianchi", voti: [7, 8, 9]  },
+    { nome: "Marco", cognome: "Rossi",   voti: [6, 5, 7]  },
+    { nome: "Luca",  cognome: "Verdi",   voti: [9, 8, 10] }
+  ];
+
+  const tab = document.getElementById('tab');
+  tab.innerHTML = '<tr><th>Nome</th><th>Cognome</th><th>Voti</th><th>Media</th></tr>';
+  classe.forEach(a => {
+    const media = (a.voti.reduce((s, v) => s + v, 0) / a.voti.length).toFixed(1);
+    tab.innerHTML +=
+      \`<tr>
+        <td>\${a.nome}</td>
+        <td>\${a.cognome}</td>
+        <td>\${a.voti.join(', ')}</td>
+        <td><b>\${media}</b></td>
+       </tr>\`;
+  });
+<\/script>`
+  }
+];
+
+const originals = slides.map(s => s.code);
+let current = 0;
+
+function buildDots() {
+  const nav = document.getElementById('navDots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot';
+    d.textContent = i + 1;
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  });
+}
+
+function updateDots() {
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+}
+
+function goTo(idx) {
+  current = idx;
+  const s = slides[current];
+  document.getElementById('slideNum').textContent   = `Variante ${current + 1} / ${slides.length}`;
+  document.getElementById('slideTitle').textContent = s.title;
+  document.getElementById('slideDesc').textContent  = s.desc;
+  const badge = document.getElementById('slideBadge');
+  badge.textContent = s.badge;
+  badge.className   = 'badge ' + s.badgeClass;
+  document.getElementById('editor').value = s.code;
+  document.getElementById('btnPrev').disabled = current === 0;
+  document.getElementById('btnNext').disabled = current === slides.length - 1;
+  updateDots();
+  runCode();
+}
+
+function navigate(dir) {
+  const next = current + dir;
+  if (next >= 0 && next < slides.length) goTo(next);
+}
+
+function runCode() {
+  const code = document.getElementById('editor').value;
+  const iframe = document.getElementById('preview');
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 24px; font-size: 16px; }
+      button { padding: 8px 18px; font-size: 15px; cursor: pointer; margin: 4px;
+               border-radius: 4px; border: 1px solid #999; background: #f0f0f0; }
+      button:hover { background: #ddd; }
+      input  { padding: 6px 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
+      pre    { white-space: pre-wrap; font-size: 14px; border-radius: 4px; }
+      table  { font-size: 15px; }
+      th     { background: #eee; }
+      li     { margin: 4px 0; }
+      label  { font-size: 15px; }
+    </style>
+  </head><body>${code}</body></html>`);
+  doc.close();
+}
+
+function resetCode() {
+  slides[current].code = originals[current];
+  document.getElementById('editor').value = originals[current];
+  runCode();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  if (e.key === 'Enter') runCode();
+});
+
+buildDots();
+goTo(0);
+</script>
+</body>
+</html>
